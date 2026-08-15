@@ -4,6 +4,7 @@ import threading
 import time
 from flask import Flask, jsonify
 from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy import text
 from sqlalchemy.exc import OperationalError
 
 import logging
@@ -34,30 +35,26 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app, model_class=Base)
 
 # --- Start of Database Resilience Loop ---
-with app.app_context():
-    retry_delay = 3
-    while True:
-        try:
-            print("[*] Attempting to connect to the database and verify tables...", flush=True)
-            db.create_all()
-            print("[*] Database tables verified/created successfully.", flush=True)
-            
-            consumer_thread = threading.Thread(
-                target=consume_and_store_order, 
-                args=(app, db), 
-                daemon=True
-            )
-            consumer_thread.start()
-            print("[*] RabbitMQ background consumer thread started.", flush=True)
-            
-            break
-            
-        except OperationalError as e:
-            print(f"[-] Database not ready yet ({e}). Retrying in {retry_delay} seconds...", flush=True)
-            time.sleep(retry_delay)
-        except Exception as e:
-            print(f"[-] Database setup notice (Unexpected error): {e}. Retrying in {retry_delay} seconds...", flush=True)
-            time.sleep(retry_delay)
+def init_app_services(app, db):
+    with app.app_context():
+        retry_delay = 3
+        while True:
+            try:
+                print("[*] Attempting to connect to the database and verify tables...", flush=True)
+                db.create_all()
+                print("[*] Database tables verified/created successfully.", flush=True)
+                
+                consumer_thread = threading.Thread(
+                    target=consume_and_store_order, 
+                    args=(app, db), 
+                    daemon=True
+                )
+                consumer_thread.start()
+                print("[*] RabbitMQ background consumer thread started.", flush=True)
+                break
+            except Exception as e:
+                print(f"[-] Setup notice: {e}. Retrying...", flush=True)
+                time.sleep(retry_delay)
 # --- End of Database Resilience Loop ---
 
 
@@ -77,11 +74,32 @@ def get_orders():
         return jsonify({"status": "success", "data": orders_list}), 200
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
+    
+
+
+SERVICE_UNAVAILABLE_CODE = 503
+
+
+@app.route("/health", methods=["GET"])
+def health_check():
+    health_status = {"status": "ok", "services": {"database": "down"}}
+    try:
+        db.session.execute(text("SELECT 1"))
+        health_status["services"]["database"] = "up"
+        status_code = 200
+    except Exception as e:
+        health_status["status"] = "error"
+        health_status["error"] = str(e)
+        status_code = SERVICE_UNAVAILABLE_CODE
+    return health_status, status_code
+
 
 if __name__ == '__main__':
     logged_app = TransLogger(app, setup_console_handler=True)
 
     logging.info(f"Starting Waitress server on 0.0.0.0:{BILLING_APP_PORT}...")
+    
+    init_app_services(app, db)
     
     serve(
         logged_app,

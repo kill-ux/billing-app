@@ -1,0 +1,20 @@
+from pytest_mock import MockerFixture
+
+"""
+Unit tests for the health check route in app/routes/health.py.
+"""
+
+def test_health_return_ok(client, mocker: MockerFixture):
+    """
+    GET /health should always return 200 with a simple status payload.
+    Used by orchestration/monitoring tools (e.g. ECS health checks,
+    load balancer target group checks) to confirm the service is up.
+    """
+    
+    resp = client.get("/health")
+    print(resp)
+
+    assert resp.status_code == 200
+    data = resp.get_json()
+    assert data["status"] == "ok"
+    assert data["services"]["database"] == "up"

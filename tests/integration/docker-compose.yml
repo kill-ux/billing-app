@@ -1,0 +1,60 @@
+networks:
+  integration-net:
+    external: true
+
+services:
+  billing-db:
+    container_name: billing-db
+    image: killux3k/postgres-db:1.0.0
+    environment:
+      DB_USER: billing
+      DB_PASS: billing
+      DB_NAME: billing
+    networks:
+      - integration-net
+    ports:
+      - "5432:5432"
+  
+  billing-app:
+    container_name: billing-app
+    image: billing-app
+    build:
+      context: ../../
+      dockerfile: Dockerfile
+    environment:
+      BILLING_DB_USER: billing
+      BILLING_DB_PASS: billing
+      BILLING_DB_NAME: billing
+      BILLING_DB_HOST: billing-db
+
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_USER: rabbit
+      RABBITMQ_PASS: rabbit
+      RABBITMQ_QUEUE: rabbit
+      RABBITMQ_PORT: "5672"
+
+      BILLING_APP_PORT: 8000
+    networks:
+      - integration-net
+    ports:
+      - "8000:8000"
+    depends_on:
+      - billing-db
+  
+  rabbitmq:
+    container_name: rabbitmq
+    networks:
+      - integration-net
+    image: killux3k/rabbitmq:1.0.0
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 15s
+    environment:
+      RABBITMQ_USER: rabbit
+      RABBITMQ_PASS: rabbit
+      RABBITMQ_QUEUE: rabbit
+    ports:
+      - "5672:5672"
