@@ -1,6 +1,6 @@
 
 
-import time, pika, json
+import time, pika, json, os
 
 
 def test_put_data_on_rabbit_and_check_if_billing_save_it_in_database_successfully(client, app_url):
