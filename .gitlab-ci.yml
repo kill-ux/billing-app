@@ -44,6 +44,7 @@ integration_test_job:
     - docker compose -f tests/integration/docker-compose.yml down --rmi local
   dependencies: []
 
+
 # sonarqube-check:
 #   stage: scan
 #   image:
