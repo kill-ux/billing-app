@@ -73,7 +73,7 @@ trivy_dependency_scan:
 containerize_app:
   stage: package
   variables:
-    DOCKERHUB_REPO: "$DOCKERHUB_USER/api-gateway"
+    DOCKERHUB_REPO: "$DOCKERHUB_USER/billing-app"
   before_script:
     - echo "$DOCKERHUB_PASS" | docker login -u "$DOCKERHUB_USER" --password-stdin
   script:
