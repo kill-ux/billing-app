@@ -80,7 +80,8 @@ def test_publish_order_to_rabbitmq_saves_to_database(client, app_url):
     matching_orders = []
     max_retries = 10
 
-    for _ in range(max_retries):
+    for i in range(max_retries):
+        print(f"Polling for order in DB, attempt {i + 1}/{max_retries}...")
         time.sleep(0.5)
         resp = client.get(f"{app_url}/api/billing")
         if resp.status_code == 200:
@@ -91,6 +92,7 @@ def test_publish_order_to_rabbitmq_saves_to_database(client, app_url):
                 ]
                 if matching_orders:
                     break
+    
 
     # 3. Verify order was created in DB
     assert len(matching_orders) > 0, f"Expected order with user_id 999 in DB, but got: {data}"

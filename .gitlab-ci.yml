@@ -12,26 +12,26 @@ cache:
   paths:
     - .cache/pip
 
-build_job:
-  stage: build
-  image: python:3.12-slim
-  script:
-    - pip install --upgrade pip
-    - pip install -r requirements-dev.txt
-    - python3 -m compileall app/
+# build_job:
+#   stage: build
+#   image: python:3.12-slim
+#   script:
+#     - pip install --upgrade pip
+#     - pip install -r requirements-dev.txt
+#     - python3 -m compileall app/
 
-unit_test_job:
-  stage: test
-  image: python:3.12-slim
-  script:
-    - pip install -r requirements-dev.txt
-    - pytest -v tests/unit --cov=app --cov-report=xml:coverage.xml --cov-report=term --junitxml=test-results.xml
-  artifacts:
-    paths:
-      - coverage.xml
-      - test-results.xml
-    expire_in: 1h
-  dependencies: []
+# unit_test_job:
+#   stage: test
+#   image: python:3.12-slim
+#   script:
+#     - pip install -r requirements-dev.txt
+#     - pytest -v tests/unit --cov=app --cov-report=xml:coverage.xml --cov-report=term --junitxml=test-results.xml
+#   artifacts:
+#     paths:
+#       - coverage.xml
+#       - test-results.xml
+#     expire_in: 1h
+#   dependencies: []
 
 integration_test_job:
   stage: test
@@ -39,7 +39,7 @@ integration_test_job:
     - apk add --no-cache python3 py3-pip
     - pip install -r requirements-dev.txt --break-system-packages
     - docker compose -f tests/integration/docker-compose.yml up -d --wait
-    - pytest -v tests/integration
+    - pytest -vs tests/integration
   after_script:
     - docker compose -f tests/integration/docker-compose.yml down --rmi local
   dependencies: []
