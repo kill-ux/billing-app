@@ -12,26 +12,26 @@ cache:
   paths:
     - .cache/pip
 
-# build_job:
-#   stage: build
-#   image: python:3.12-slim
-#   script:
-#     - pip install --upgrade pip
-#     - pip install -r requirements-dev.txt
-#     - python3 -m compileall app/
+build_job:
+  stage: build
+  image: python:3.12-slim
+  script:
+    - pip install --upgrade pip
+    - pip install -r requirements-dev.txt
+    - python3 -m compileall app/
 
-# unit_test_job:
-#   stage: test
-#   image: python:3.12-slim
-#   script:
-#     - pip install -r requirements-dev.txt
-#     - pytest -v tests/unit --cov=app --cov-report=xml:coverage.xml --cov-report=term --junitxml=test-results.xml
-#   artifacts:
-#     paths:
-#       - coverage.xml
-#       - test-results.xml
-#     expire_in: 1h
-#   dependencies: []
+unit_test_job:
+  stage: test
+  image: python:3.12-slim
+  script:
+    - pip install -r requirements-dev.txt
+    - pytest -v tests/unit --cov=app --cov-report=xml:coverage.xml --cov-report=term --junitxml=test-results.xml
+  artifacts:
+    paths:
+      - coverage.xml
+      - test-results.xml
+    expire_in: 1h
+  dependencies: []
 
 integration_test_job:
   stage: test
@@ -45,44 +45,44 @@ integration_test_job:
   dependencies: []
 
 
-# sonarqube-check:
-#   stage: scan
-#   image:
-#     name: sonarsource/sonar-scanner-cli:latest
-#     entrypoint: [""]
-#   variables:
-#     SONAR_USER_HOME: "${CI_PROJECT_DIR}/.sonar" 
-#     GIT_DEPTH: "0"
-#   cache:
-#     key: "${CI_JOB_NAME}"
-#     paths:
-#       - .sonar/cache
-#   script:
-#     - sonar-scanner
-#   only:
-#     - main
+sonarqube-check:
+  stage: scan
+  image:
+    name: sonarsource/sonar-scanner-cli:latest
+    entrypoint: [""]
+  variables:
+    SONAR_USER_HOME: "${CI_PROJECT_DIR}/.sonar" 
+    GIT_DEPTH: "0"
+  cache:
+    key: "${CI_JOB_NAME}"
+    paths:
+      - .sonar/cache
+  script:
+    - sonar-scanner
+  only:
+    - main
 
-# trivy_dependency_scan:
-#   stage: scan
-#   image:
-#     name: aquasec/trivy:latest
-#     entrypoint: [""]
-#   script:
-#     - trivy fs --quiet --scanners vuln,secret,misconfig --exit-code 1 .
+trivy_dependency_scan:
+  stage: scan
+  image:
+    name: aquasec/trivy:latest
+    entrypoint: [""]
+  script:
+    - trivy fs --quiet --scanners vuln,secret,misconfig --exit-code 1 .
 
-# containerize_app:
-#   stage: package
-#   variables:
-#     DOCKERHUB_REPO: "$DOCKERHUB_USER/api-gateway"
-#   before_script:
-#     - echo "$DOCKERHUB_PASS" | docker login -u "$DOCKERHUB_USER" --password-stdin
-#   script:
-#     - TAG_ARGS="-t $DOCKERHUB_REPO:$CI_COMMIT_SHA -t $DOCKERHUB_REPO:$CI_COMMIT_REF_SLUG"
-#     - |
-#       if [ -n "$CI_COMMIT_TAG" ]; then
-#         TAG_ARGS="$TAG_ARGS -t $DOCKERHUB_REPO:$CI_COMMIT_TAG -t $DOCKERHUB_REPO:latest"
-#       fi
-#     - docker build $TAG_ARGS .
-#     - docker push --all-tags $DOCKERHUB_REPO
-#   dependencies: []
+containerize_app:
+  stage: package
+  variables:
+    DOCKERHUB_REPO: "$DOCKERHUB_USER/api-gateway"
+  before_script:
+    - echo "$DOCKERHUB_PASS" | docker login -u "$DOCKERHUB_USER" --password-stdin
+  script:
+    - TAG_ARGS="-t $DOCKERHUB_REPO:$CI_COMMIT_SHA -t $DOCKERHUB_REPO:$CI_COMMIT_REF_SLUG"
+    - |
+      if [ -n "$CI_COMMIT_TAG" ]; then
+        TAG_ARGS="$TAG_ARGS -t $DOCKERHUB_REPO:$CI_COMMIT_TAG -t $DOCKERHUB_REPO:latest"
+      fi
+    - docker build $TAG_ARGS .
+    - docker push --all-tags $DOCKERHUB_REPO
+  dependencies: []
   

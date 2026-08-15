@@ -1,9 +1,10 @@
+import os
+import json
+import time
+import pika
 
 
-import time, pika, json, os
-
-
-def test_put_data_on_rabbit_and_check_if_billing_save_it_in_database_successfully(client, app_url):
+def test_publish_order_to_rabbitmq_saves_to_database(client, app_url):
     rabbitmq_host = os.getenv("RABBITMQ_HOST", "rabbitmq")
     rabbitmq_port = int(os.getenv("RABBITMQ_PORT", "5672"))
     rabbitmq_user = os.getenv("RABBITMQ_USER", "rabbit")
@@ -23,7 +24,6 @@ def test_put_data_on_rabbit_and_check_if_billing_save_it_in_database_successfull
     )
     channel = connection.channel()
     
-    # Declare matching quorum queue setup
     channel.queue_declare(
         queue=rabbitmq_queue,
         durable=True,
@@ -36,18 +36,24 @@ def test_put_data_on_rabbit_and_check_if_billing_save_it_in_database_successfull
         body=json.dumps(payload).encode("utf-8")
     )
     connection.close()
-    
-    time.sleep(3)
-    
-    resp = client.get(f"{app_url}/api/billing")
-    assert resp.status_code == 200
 
-    data = resp.json()
-    assert data["status"] == "success"
-    
-    matching_orders = [
-        item for item in data["data"] if item.get("user_id") == 999
-    ]
-    assert len(matching_orders) > 0
+    # 2. Dynamic polling (retries every 0.5s up to 5s max)
+    matching_orders = []
+    max_retries = 10
+
+    for _ in range(max_retries):
+        time.sleep(0.5)
+        resp = client.get(f"{app_url}/api/billing")
+        if resp.status_code == 200:
+            data = resp.json()
+            if data.get("status") == "success":
+                matching_orders = [
+                    item for item in data.get("data", []) if item.get("user_id") == 999
+                ]
+                if matching_orders:
+                    break
+
+    # 3. Comprehensive assertions
+    assert len(matching_orders) > 0, "Order was not found in DB after queue consumption"
     assert matching_orders[0]["number_of_items"] == 7
-
+    assert matching_orders[0]["total_amount"] == 12.34
