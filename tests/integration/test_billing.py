@@ -14,10 +14,11 @@ def test_put_data_on_rabbit_and_check_if_billing_save_it_in_database_successfull
     channel.queue_declare(
         queue="rabbit", durable=True, arguments={"x-queue-type": "quorum"}
     )
+    body = json.dumps(payload).encode("utf-8")
     channel.basic_publish(
         exchange="",
         routing_key="rabbit",
-        body=str(payload)
+        body=body
     )
     connection.close()
     
