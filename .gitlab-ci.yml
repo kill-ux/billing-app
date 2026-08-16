@@ -25,7 +25,7 @@ unit_test_job:
   image: python:3.12-slim
   script:
     - pip install -r requirements-dev.txt
-    - pytest -v tests/unit --cov=app --cov-report=xml:coverage.xml --cov-report=term --junitxml=test-results.xml
+    - pytest -v tests/unit --cov=app --cov=server --cov-report=xml:coverage.xml --cov-report=term --junitxml=test-results.xml
   artifacts:
     paths:
       - coverage.xml
