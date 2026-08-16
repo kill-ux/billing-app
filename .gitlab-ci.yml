@@ -31,7 +31,7 @@ cache:
 #       - coverage.xml
 #       - test-results.xml
 #     expire_in: 1h
-  dependencies: []
+  # dependencies: []
 
 integration_test_job:
   stage: test
