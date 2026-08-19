@@ -3,6 +3,7 @@ import pika
 import json
 import time
 from pika.exceptions import AMQPConnectionError, AMQPChannelError, StreamLostError
+from sqlalchemy.exc import OperationalError
 
 from app.orders import create_order
 
@@ -26,9 +27,13 @@ def process_order_message(ch, method, properties, body, app, db):
             
         print(" [x] created new order", flush=True)
         ch.basic_ack(delivery_tag=method.delivery_tag)
+    except OperationalError as error:
+        print(f"DB connection error, requeueing: {error}", flush=True)
+        ch.basic_nack(delivery_tag=method.delivery_tag, requeue=True)
+        time.sleep(5)
     except Exception as error:
         print(f"Failed to process billing message: {error}", flush=True)
-        ch.basic_nack(delivery_tag=method.delivery_tag, requeue=True)
+        ch.basic_nack(delivery_tag=method.delivery_tag, requeue=False)
         time.sleep(5)
 
 
