@@ -47,6 +47,33 @@ def test_process_order_message_failure_triggers_nack(app, mocker):
     )
 
     mock_ch.basic_ack.assert_not_called()
+    mock_ch.basic_nack.assert_called_once_with(delivery_tag=42, requeue=False)
+    
+def test_process_order_message_transient_error_triggers_requeue(app, mocker):
+    from app.consume_queue import process_order_message
+    from sqlalchemy.exc import OperationalError
+
+    mock_ch = mocker.Mock()
+    mock_method = mocker.Mock(delivery_tag=42)
+    mock_db = mocker.Mock()
+    mocker.patch(
+        "app.consume_queue.create_order",
+        side_effect=OperationalError("statement", "params", "orig")
+    )
+    mocker.patch("time.sleep")
+
+    payload = json.dumps({"order_id": 101}).encode("utf-8")
+
+    process_order_message(
+        ch=mock_ch,
+        method=mock_method,
+        properties=None,
+        body=payload,
+        app=app,
+        db=mock_db
+    )
+
+    mock_ch.basic_ack.assert_not_called()
     mock_ch.basic_nack.assert_called_once_with(delivery_tag=42, requeue=True)
 
 def test_list_billing_orders(client, mocker):
