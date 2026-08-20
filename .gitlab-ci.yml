@@ -106,7 +106,7 @@ deploy_staging:
       when: manual
   variables:
     ENVIRONMENT: staging
-    TASK_NAME: billing
+    TASK_NAME: billing-app
     ECS_CLUSTER: cloud-design-cluster-${ENVIRONMENT}
     ECS_SERVICE: ${TASK_NAME}-service-${ENVIRONMENT}
     ECS_TASK_FAMILY: ${TASK_NAME}-${ENVIRONMENT}
@@ -117,6 +117,7 @@ deploy_staging:
 
   script:
     - |
+      echo "=== Describing task definition ==="
       set -eu
 
       aws ecs describe-task-definition \
@@ -124,6 +125,7 @@ deploy_staging:
         --query taskDefinition > "$TASK_DEF_JSON"
 
     - |
+      echo "=== Updating container image ==="
       set -eu
 
       jq --arg NAME $CONTAINER_NAME --arg IMAGE $IMAGE_URI '
@@ -143,6 +145,7 @@ deploy_staging:
       ' $TASK_DEF_JSON > $NEW_TASK_DEF_JSON
     
     - |
+      echo "=== Registering task definition ==="
       set -eu
 
       export TASK_DEF_ARN=$(
@@ -152,6 +155,7 @@ deploy_staging:
           --output text )
 
     - |
+      echo "=== Updating ECS service ==="
       set -eu
 
       aws ecs update-service \
@@ -160,6 +164,7 @@ deploy_staging:
         --task-definition "$TASK_DEF_ARN"
 
     - |
+      echo "=== Waiting for ECS service stability ==="
       set -eu
 
       aws ecs wait services-stable \

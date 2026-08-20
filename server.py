@@ -77,7 +77,7 @@ def get_orders():
     
 @app.route('/api/billing/check', methods = ["GET"])
 def check():
-    return 200, {"status": "ok", "version": "v1.1.1"}
+    return {"status": "ok", "version": "v1.1.1"}, 200
     
 
 
