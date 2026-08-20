@@ -8,4 +8,8 @@ def test_check_endpoint(client, app_url):
     resp = client.get(f"{app_url}/api/billing/check")
 
     assert resp.status_code == 200
-    assert resp.get_json()["status"] == "ok"
+    assert resp.json()["status"] == "ok"
+
+def test_get_billing(client, app_url):
+    resp = client.get(f"{app_url}/api/billing")
+    data = resp.json()
