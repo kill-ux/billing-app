@@ -59,12 +59,6 @@ def init_app_services(app, db):
 
 billing_bp = Blueprint("billing_bp", __name__, url_prefix="/api/billing")
 
-
-@billing_bp.route('/check', methods = ["GET"])
-def check():
-    return {"status": "ok", "version": "v1.1.1"}, 200
-    
-
 @billing_bp.route('', methods=['GET'])
 def get_orders():
     try:

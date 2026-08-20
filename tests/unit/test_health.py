@@ -30,8 +30,3 @@ def test_health_database_failure(client, mocker):
     assert data["services"]["database"] == "down"
     assert data["error"] == "database unavailable"
     
-def test_check_fun(client, mocker):
-    response = client.get("/api/billing/check")
-    
-    assert response.status_code == 200
-    assert response.get_json()["status"] == "ok"
