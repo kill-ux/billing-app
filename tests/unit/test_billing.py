@@ -90,7 +90,7 @@ def test_list_billing_orders(client, mocker):
 
     mocker.patch("server.db.session.execute", return_value=mock_query)
 
-    response = client.get("/api/billing")
+    response = client.get("/api/billing/")
     
     assert response.status_code == 200
     data = response.get_json()
@@ -102,7 +102,7 @@ def test_list_billing_orders(client, mocker):
 def test_list_billing_orders_db_error(client, mocker):
     mocker.patch("server.db.session.execute", side_effect=Exception("DB error"))
 
-    resp = client.get("/api/billing")
+    resp = client.get("/api/billing/")
     
     assert resp.status_code == 500
     data = resp.get_json()

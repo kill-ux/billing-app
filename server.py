@@ -65,7 +65,7 @@ def check():
     return {"status": "ok", "version": "v1.1.1"}, 200
     
 
-@billing_bp.route('', methods=['GET'])
+@billing_bp.route('/', methods=['GET'])
 def get_orders():
     try:
         all_orders = db.session.execute(db.select(Order)).scalars().all()
