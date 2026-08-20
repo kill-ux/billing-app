@@ -75,6 +75,10 @@ def get_orders():
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
     
+@app.route('/api/billing/check', methods = ["GET"])
+def check():
+    return 200, {"status": "ok", "version": "v1.1.1"}
+    
 
 
 SERVICE_UNAVAILABLE_CODE = 503

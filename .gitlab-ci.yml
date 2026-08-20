@@ -3,6 +3,7 @@ stages:
   - test
   - scan
   - package
+  - deploy
 
 variables:
   PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
@@ -95,3 +96,72 @@ containerize_app:
   dependencies: []
   rules:
     - if: "$CI_COMMIT_REF_PROTECTED"
+
+
+deploy_staging:
+  stage: deploy
+  image: heyvaldemar/aws-kubectl:latest
+  rules:
+    - if: "$CI_COMMIT_REF_PROTECTED"
+      when: manual
+  variables:
+    ENVIRONMENT: staging
+    TASK_NAME: billing
+    ECS_CLUSTER: cloud-design-cluster-${ENVIRONMENT}
+    ECS_SERVICE: ${TASK_NAME}-service-${ENVIRONMENT}
+    ECS_TASK_FAMILY: ${TASK_NAME}-${ENVIRONMENT}
+    CONTAINER_NAME: ${TASK_NAME}
+    IMAGE_URI: ${DOCKERHUB_USER}/${TASK_NAME}:${CI_COMMIT_SHA}
+    TASK_DEF_JSON: task-definition.json
+    NEW_TASK_DEF_JSON: new-task-definition.json
+
+  script:
+    - |
+      set -eu
+
+      aws ecs describe-task-definition \
+        --task-definition "$ECS_TASK_FAMILY" \
+        --query taskDefinition > "$TASK_DEF_JSON"
+
+    - |
+      set -eu
+
+      jq --arg NAME $CONTAINER_NAME --arg IMAGE $IMAGE_URI '
+        del(
+          .taskDefinitionArn,
+          .revision,
+          .status,
+          .requiresAttributes,
+          .compatibilities,
+          .registeredAt,
+          .registeredBy,
+          .deregisteredAt
+        )
+      | .containerDefinitions |= map(
+          if .name == $NAME then .image = $IMAGE else . end
+        )
+      ' $TASK_DEF_JSON > $NEW_TASK_DEF_JSON
+    
+    - |
+      set -eu
+
+      export TASK_DEF_ARN=$(
+        aws ecs register-task-definition \
+          --cli-input-json "file://$NEW_TASK_DEF_JSON" \
+          --query 'taskDefinition.taskDefinitionArn' \
+          --output text )
+
+    - |
+      set -eu
+
+      aws ecs update-service \
+        --cluster "$ECS_CLUSTER" \
+        --service "$ECS_SERVICE" \
+        --task-definition "$TASK_DEF_ARN"
+
+    - |
+      set -eu
+
+      aws ecs wait services-stable \
+        --cluster "$ECS_CLUSTER" \
+        --services "$ECS_SERVICE"    
