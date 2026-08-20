@@ -65,7 +65,7 @@ def check():
     return {"status": "ok", "version": "v1.1.1"}, 200
     
 
-@billing_bp.route('/', methods=['GET'])
+@billing_bp.route('', methods=['GET'])
 def get_orders():
     try:
         all_orders = db.session.execute(db.select(Order)).scalars().all()
@@ -99,6 +99,7 @@ def health_check():
         status_code = SERVICE_UNAVAILABLE_CODE
     return health_status, status_code
 
+app.url_map.strict_slashes = False
 app.register_blueprint(billing_bp)
 
 
