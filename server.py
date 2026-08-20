@@ -57,6 +57,10 @@ def init_app_services(app, db):
                 time.sleep(retry_delay)
 # --- End of Database Resilience Loop ---
 
+@app.route('/api/billing/check', methods = ["GET"])
+def check():
+    return {"status": "ok", "version": "v1.1.1"}, 200
+    
 
 @app.route('/api/billing', methods=['GET'])
 def get_orders():
@@ -75,11 +79,6 @@ def get_orders():
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
     
-@app.route('/api/billing/check', methods = ["GET"])
-def check():
-    return {"status": "ok", "version": "v1.1.1"}, 200
-    
-
 
 SERVICE_UNAVAILABLE_CODE = 503
 
