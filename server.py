@@ -2,7 +2,7 @@
 import os
 import threading
 import time
-from flask import Flask, jsonify
+from flask import Flask, jsonify, Blueprint
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import text
 from sqlalchemy.exc import OperationalError
@@ -57,12 +57,15 @@ def init_app_services(app, db):
                 time.sleep(retry_delay)
 # --- End of Database Resilience Loop ---
 
-@app.route('/api/billing/check', methods = ["GET"])
+billing_bp = Blueprint("billing_bp", __name__, url_prefix="/api/billing")
+
+
+@billing_bp.route('/check', methods = ["GET"])
 def check():
     return {"status": "ok", "version": "v1.1.1"}, 200
     
 
-@app.route('/api/billing/', methods=['GET'])
+@billing_bp.route('', methods=['GET'])
 def get_orders():
     try:
         all_orders = db.session.execute(db.select(Order)).scalars().all()
@@ -95,6 +98,8 @@ def health_check():
         health_status["error"] = str(e)
         status_code = SERVICE_UNAVAILABLE_CODE
     return health_status, status_code
+
+app.register_blueprint(billing_bp)
 
 
 if __name__ == '__main__':
