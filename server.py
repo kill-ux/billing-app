@@ -62,7 +62,7 @@ def check():
     return {"status": "ok", "version": "v1.1.1"}, 200
     
 
-@app.route('/api/billing', methods=['GET'])
+@app.route('/api/billing/', methods=['GET'])
 def get_orders():
     try:
         all_orders = db.session.execute(db.select(Order)).scalars().all()
